@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Predictor de Calidad del Aire - Valle de Aburrá</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 30px;
+        }
+        .container {
+            max-width: 750px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin: auto;
+        }
+        h2 {
+            color: #333333;
+            margin-top: 0;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            color: #555555;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background-color: #198754;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #157347;
+        }
+        .resultado {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 6px;
+            background-color: #f8f9fa;
+            border-left: 6px solid #198754;
+        }
+        .resultado h3 {
+            margin: 0 0 10px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .grafico-box {
+            margin-top: 25px;
+            text-align: center;
+        }
+        .grafico-box img {
+            max-width: 100%;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Predictor y Explicabilidad de PM2.5</h2>
+        <p style="color: #666; font-size: 14px;">Modelo de ensamble supervisado (XGBoost) con interpretabilidad TreeSHAP.</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            <label>Monóxido de Carbono (CO) [µg/m³]:</label>
+            <input type="number" step="any" name="carbon_monoxide" placeholder="Ej: 414.96" required>
+            
+            <label>Ozono (O3) [µg/m³]:</label>
+            <input type="number" step="any" name="ozone" placeholder="Ej: 55.67" required>
+            
+            <label>Aerosol Optical Depth (AOD):</label>
+            <input type="number" step="any" name="aerosol_optical_depth" placeholder="Ej: 0.24" required>
+            
+            <button type="submit">Calcular Predicción e Interpretabilidad</button>
+        </form>
+
+        {% if prediccion %}
+            <div class="resultado" style="border-left-color: {{ ica.color }};">
+                <h3>Concentración Estimada de PM2.5: {{ prediccion }} µg/m³</h3>
+                <span class="badge" style="background-color: {{ ica.color }};">{{ ica.estado }}</span>
+                <p style="margin-top: 10px; color: #444; font-size: 14px;">{{ ica.alerta }}</p>
+            </div>
+
+            {% if grafico_shap %}
+                <div class="grafico-box">
+                    <img src="data:image/png;base64,{{ grafico_shap }}" alt="Gráfico de Interpretabilidad SHAP">
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</body>
+</html>
