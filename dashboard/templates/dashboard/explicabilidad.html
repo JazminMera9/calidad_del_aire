@@ -1,0 +1,32 @@
+{% extends "dashboard/base.html" %}
+{% block titulo %}Explicabilidad{% endblock %}
+{% block contenido %}
+<h1>Explicabilidad global del modelo (TreeSHAP)</h1>
+<p class="subtitulo">
+  Importancia promedio de cada variable en los 194 pronósticos del periodo de prueba, medida como el valor absoluto medio de
+  su aporte SHAP en µg/m³. La columna de dirección indica si valores altos de la variable suben o bajan el pronóstico.
+</p>
+
+{% for b in bloques %}
+<h2>{{ b.nombre }}</h2>
+<div class="rejilla">
+  <section class="panel"><img src="data:image/png;base64,{{ b.img_importancia }}" alt="Importancia de variables para {{ b.nombre }}"></section>
+  <section class="panel"><img src="data:image/png;base64,{{ b.img_grupos }}" alt="Importancia por grupo de variables para {{ b.nombre }}"></section>
+</div>
+<section class="panel tabla-scroll" style="margin-top:20px">
+  <table>
+    <thead><tr><th>Variable</th><th>Grupo</th><th class="num">|SHAP| medio (µg/m³)</th><th class="num">Peso</th><th>Valores altos de la variable…</th></tr></thead>
+    <tbody>
+      {% for f in b.tabla %}
+      <tr>
+        <td>{{ f.nombre }}</td><td>{{ f.grupo }}</td>
+        <td class="num">{{ f.importancia|floatformat:3 }}</td>
+        <td class="num">{{ f.peso|floatformat:1 }} %</td>
+        <td>{% if f.correlacion > 0.3 %}suben el pronóstico{% elif f.correlacion < -0.3 %}bajan el pronóstico{% else %}efecto no lineal{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endfor %}
+{% endblock %}

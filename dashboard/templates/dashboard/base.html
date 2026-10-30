@@ -1,0 +1,33 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Pronóstico de Calidad del Aire{% endblock %} · Valle de Aburrá</title>
+  <link rel="stylesheet" href="{% static 'dashboard/estilos.css' %}">
+</head>
+<body>
+  <header class="encabezado">
+    <div class="contenedor">
+      <div class="marca">Pronóstico explicable de PM2.5 y PM10
+        <small>Medellín y su área metropolitana · Machine Learning + TreeSHAP</small>
+      </div>
+      <nav>
+        <a href="{% url 'dashboard:inicio' %}" class="{% if seccion == 'inicio' %}activo{% endif %}">Pronóstico</a>
+        <a href="{% url 'dashboard:historial' %}" class="{% if seccion == 'historial' %}activo{% endif %}">Desempeño</a>
+        <a href="{% url 'dashboard:explicabilidad' %}" class="{% if seccion == 'explicabilidad' %}activo{% endif %}">Explicabilidad</a>
+        <a href="{% url 'dashboard:acerca' %}" class="{% if seccion == 'acerca' %}activo{% endif %}">Acerca del modelo</a>
+      </nav>
+    </div>
+  </header>
+  <main class="contenedor">
+    {% block contenido %}{% endblock %}
+  </main>
+  <footer>
+    <div class="contenedor">
+      Trabajo de grado · Ingeniería Informática · Institución Universitaria Colegio Mayor del Cauca, 2026.
+      Herramienta de apoyo a la decisión: no reemplaza los boletines oficiales del SIATA ni del Área Metropolitana del Valle de Aburrá.
+    </div>
+  </footer>
+</body>
+</html>

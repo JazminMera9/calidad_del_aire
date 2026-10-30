@@ -1,105 +1,99 @@
-import base64
-import io
-import os
-import matplotlib
-matplotlib.use('Agg')  # Evita errores de interfaz gráfica en el servidor
-import matplotlib.pyplot as plt
-import pandas as pd
-import shap
-import xgboost as xgb
-from django.conf import settings
+from datetime import date
+
 from django.shortcuts import render
 
-# 1. Ruta absoluta y carga del modelo
-MODEL_PATH = os.path.join(settings.BASE_DIR, 'dashboard', 'ml_models', 'mejor_modelo_pm25.json')
-modelo_pm25 = xgb.XGBRegressor()
-modelo_pm25.load_model(MODEL_PATH)
+from .services import graficos
+from .services.ml import OBJETIVOS, metadatos, obtener_servicio
 
-# 2. Inicializar el motor de explicabilidad TreeSHAP
-explainer_pm25 = shap.TreeExplainer(modelo_pm25)
 
-def clasificar_ica(pm25):
-    """Clasificación según los rangos estándar de la Resolución 2254 de 2017."""
-    if pm25 <= 12.0:
-        return {"estado": "Buena", "color": "#198754", "alerta": "Condiciones óptimas sin riesgo para la salud."}
-    elif pm25 <= 37.4:
-        return {"estado": "Aceptable / Moderada", "color": "#ffc107", "alerta": "Aceptable, posibles síntomas en población muy sensible."}
-    elif pm25 <= 55.4:
-        return {"estado": "Dañina para grupos sensibles (Alerta Naranja)", "color": "#fd7e14", "alerta": "Población vulnerable debe evitar actividades al aire libre."}
-    else:
-        return {"estado": "Dañina para la salud (Alerta Roja)", "color": "#dc3545", "alerta": "Toda la población puede experimentar efectos adversos."}
+def _servicio_o_error(request):
+    """Devuelve el servicio de predicción o una página de error amigable si faltan archivos."""
+    try:
+        return obtener_servicio(), None
+    except FileNotFoundError as exc:
+        return None, render(request, "dashboard/error.html", {"mensaje": str(exc)}, status=503)
 
-def prediccion_dashboard(request):
+
+def inicio(request):
+    servicio, error = _servicio_o_error(request)
+    if error:
+        return error
+
+    mensaje = None
+    fecha = servicio.fecha_pronostico
+    texto = request.GET.get("fecha")
+    if texto:
+        try:
+            pedida = date.fromisoformat(texto)
+            if servicio.primera_fecha <= pedida <= servicio.fecha_pronostico:
+                fecha = pedida
+            else:
+                mensaje = (f"La fecha debe estar entre {servicio.primera_fecha:%d/%m/%Y} y "
+                           f"{servicio.fecha_pronostico:%d/%m/%Y}. Se muestra el pronóstico más reciente.")
+        except ValueError:
+            mensaje = "Formato de fecha no válido. Se muestra el pronóstico más reciente."
+
+    resultado = servicio.pronosticar(fecha)
+    for c in resultado["contaminantes"]:
+        c["grafico_factores"] = graficos.factores(c)
+        c["grafico_reciente"] = graficos.reciente(servicio, c["columna"], c["nombre"], fecha,
+                                                  c["prediccion"], c["umbral"])
     contexto = {
-        'prediccion': None,
-        'ica': None,
-        'grafico_shap': None
+        "seccion": "inicio",
+        "resultado": resultado,
+        "es_operativo": fecha == servicio.fecha_pronostico,
+        "fecha_min": servicio.primera_fecha.isoformat(),
+        "fecha_max": servicio.fecha_pronostico.isoformat(),
+        "fecha_valor": fecha.isoformat(),
+        "ultima_fecha": servicio.ultima_fecha,
+        "mensaje": mensaje,
     }
+    return render(request, "dashboard/inicio.html", contexto)
 
-    if request.method == 'POST':
-        # Captura de variables
-        co = float(request.POST.get('carbon_monoxide', 414.96))
-        o3 = float(request.POST.get('ozone', 55.67))
-        aod = float(request.POST.get('aerosol_optical_depth', 0.24))
 
-        # Vector de 23 características
-        datos_entrada = pd.DataFrame([{
-            'carbon_monoxide': co,
-            'nitrogen_dioxide': 14.30,
-            'sulphur_dioxide': 4.23,
-            'ozone': o3,
-            'aerosol_optical_depth': aod,
-            'dust': 0.16,
-            'uv_index': 1.81,
-            'pm10_lag1': 17.33,
-            'pm10_lag2': 17.33,
-            'pm2_5_lag1': 13.64,
-            'pm2_5_lag2': 13.64,
-            'carbon_monoxide_lag1': 485.11,
-            'carbon_monoxide_lag2': 485.11,
-            'nitrogen_dioxide_lag1': 14.30,
-            'nitrogen_dioxide_lag2': 14.30,
-            'sulphur_dioxide_lag1': 4.23,
-            'sulphur_dioxide_lag2': 4.23,
-            'ozone_lag1': 55.21,
-            'ozone_lag2': 55.21,
-            'pm10_ma3': 17.33,
-            'pm10_delta': 0.0,
-            'pm2_5_ma3': 13.64,
-            'pm2_5_delta': 0.0
-        }])
+def historial(request):
+    servicio, error = _servicio_o_error(request)
+    if error:
+        return error
+    prueba = servicio.prueba
+    graficas = [{"nombre": obj, "img": graficos.historial(prueba, col, obj, servicio.umbral_p90[obj])}
+                for obj, col in OBJETIVOS.items()]
+    contexto = {
+        "seccion": "historial",
+        "metricas": servicio.metricas_prueba(),
+        "graficas": graficas,
+        "desde": prueba["date"].min().date(),
+        "hasta": prueba["date"].max().date(),
+        "umbral_pm25": servicio.umbral_p90["PM2.5"],
+        "umbral_pm10": servicio.umbral_p90["PM10"],
+    }
+    return render(request, "dashboard/historial.html", contexto)
 
-        # 3. Predicción numérica
-        resultado = modelo_pm25.predict(datos_entrada)
-        prediccion_val = round(float(resultado[0]), 2)
-        contexto['prediccion'] = prediccion_val
-        contexto['ica'] = clasificar_ica(prediccion_val)
 
-        # 4. Cálculo de TreeSHAP y generación de gráfico local
-        shap_vals = explainer_pm25.shap_values(datos_entrada)[0]
-        feature_names = datos_entrada.columns
+def explicabilidad(request):
+    servicio, error = _servicio_o_error(request)
+    if error:
+        return error
+    bloques = []
+    for obj, col in OBJETIVOS.items():
+        tabla = servicio.importancia_global(col)
+        grupos = servicio.importancia_grupos(col)
+        bloques.append({
+            "nombre": obj,
+            "img_importancia": graficos.importancia(tabla, obj),
+            "img_grupos": graficos.grupos(grupos, obj),
+            "tabla": tabla.head(10).to_dict("records"),
+        })
+    return render(request, "dashboard/explicabilidad.html", {"seccion": "explicabilidad", "bloques": bloques})
 
-        # Tomar las 6 variables con mayor impacto absoluto
-        df_shap = pd.DataFrame({
-            'feature': feature_names,
-            'shap': shap_vals
-        }).reindex(pd.Series(abs(shap_vals)).sort_values(ascending=False).index).head(6)
 
-        df_shap = df_shap.sort_values(by='shap')  # Para orden en gráfico de barras
-
-        fig, ax = plt.subplots(figsize=(7, 3.5))
-        colores = ['#dc3545' if val > 0 else '#0d6efd' for val in df_shap['shap']]
-        ax.barh(df_shap['feature'], df_shap['shap'], color=colores)
-        ax.axvline(0, color='gray', linestyle='--', linewidth=0.8)
-        ax.set_title("Explicabilidad Local TreeSHAP (Aporte marginal en µg/m³)")
-        ax.set_xlabel("Impacto en la predicción (+ Incrementa / - Disminuye)")
-        plt.tight_layout()
-
-        # Convertir gráfico a string Base64 para HTML
-        buffer = io.BytesIO()
-        plt.savefig(buffer, format='png', dpi=100)
-        buffer.seek(0)
-        contexto['grafico_shap'] = base64.b64encode(buffer.getvalue()).decode('utf-8')
-        plt.close(fig)
-
-    return render(request, 'dashboard/index.html', contexto)
+def acerca(request):
+    servicio, error = _servicio_o_error(request)
+    if error:
+        return error
+    return render(request, "dashboard/acerca.html", {
+        "seccion": "acerca",
+        "servicio": servicio,
+        "meta": metadatos(),
+        "n_dias": len(servicio.datos),
+    })

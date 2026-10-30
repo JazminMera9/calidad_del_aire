@@ -1,0 +1,7 @@
+{% extends "dashboard/base.html" %}
+{% block titulo %}Configuración incompleta{% endblock %}
+{% block contenido %}
+<h1>Falta un archivo para iniciar el modelo</h1>
+<div class="aviso">{{ mensaje }}</div>
+<p>Revise el archivo <code>README.md</code> del proyecto, sección «Modelos», para exportar los modelos desde el notebook y copiarlos en la carpeta <code>dashboard/ml_models/</code>.</p>
+{% endblock %}

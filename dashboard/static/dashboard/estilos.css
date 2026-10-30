@@ -1,0 +1,128 @@
+:root {
+  --tinta: #1d2430;
+  --tinta-suave: #4a5260;
+  --linea: #dfe3e8;
+  --fondo: #f5f6f8;
+  --panel: #ffffff;
+  --acento: #1f5fa8;
+  --acento-oscuro: #17497f;
+  --rojo: #c8102e;
+  --aviso: #fff4e5;
+  --aviso-borde: #f0a03c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  color: var(--tinta);
+  background: var(--fondo);
+  line-height: 1.5;
+}
+
+/* ---------- Encabezado y navegación ---------- */
+.encabezado {
+  background: var(--tinta);
+  color: #fff;
+}
+.encabezado .contenedor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.marca { font-weight: 700; font-size: 1.05rem; letter-spacing: 0.2px; }
+.marca small { display: block; font-weight: 400; color: #b9c2cf; font-size: 0.8rem; }
+nav a {
+  color: #d5dbe4;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.92rem;
+}
+nav a:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+nav a.activo { background: rgba(255, 255, 255, 0.14); color: #fff; font-weight: 600; }
+
+.contenedor { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+main.contenedor { padding-top: 28px; padding-bottom: 48px; }
+
+h1 { font-size: 1.6rem; margin: 0 0 6px; }
+h2 { font-size: 1.2rem; margin: 32px 0 12px; }
+h3 { font-size: 1.02rem; margin: 0 0 8px; }
+p.subtitulo { color: var(--tinta-suave); margin: 0 0 22px; }
+
+/* ---------- Paneles ---------- */
+.rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--linea);
+  border-radius: 10px;
+  padding: 20px;
+}
+.panel img { width: 100%; height: auto; display: block; }
+
+.tarjeta-valor { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 10px; }
+.tarjeta-valor .cifra { font-size: 2.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tarjeta-valor .unidad { color: var(--tinta-suave); }
+
+.categoria {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.dato-fila { display: flex; justify-content: space-between; border-top: 1px solid var(--linea); padding: 7px 0; font-size: 0.92rem; }
+.dato-fila span:first-child { color: var(--tinta-suave); }
+.dato-fila strong { font-variant-numeric: tabular-nums; }
+.critico { color: var(--rojo); font-weight: 700; }
+
+.aviso {
+  background: var(--aviso);
+  border-left: 4px solid var(--aviso-borde);
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin: 0 0 20px;
+  font-size: 0.92rem;
+}
+.nota { color: var(--tinta-suave); font-size: 0.85rem; }
+
+/* ---------- Formulario ---------- */
+.buscador { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-bottom: 22px; }
+.buscador label { display: block; font-size: 0.85rem; color: var(--tinta-suave); margin-bottom: 4px; }
+.buscador input[type="date"] { padding: 8px 10px; border: 1px solid #c7ccd4; border-radius: 6px; font-size: 0.95rem; }
+.boton {
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--acento);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.92rem;
+}
+.boton:hover { background: var(--acento-oscuro); }
+.boton.secundario { background: #e8ecf1; color: var(--tinta); }
+
+/* ---------- Tablas ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--linea); }
+th { background: #f0f2f5; font-weight: 600; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabla-scroll { overflow-x: auto; }
+
+.leyenda-shap { display: flex; gap: 16px; font-size: 0.85rem; color: var(--tinta-suave); margin-top: 6px; }
+.punto { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+
+footer { border-top: 1px solid var(--linea); color: var(--tinta-suave); font-size: 0.82rem; padding: 18px 0 30px; }
+
+@media (max-width: 600px) {
+  .tarjeta-valor .cifra { font-size: 2rem; }
+  nav a { padding: 6px 8px; }
+}

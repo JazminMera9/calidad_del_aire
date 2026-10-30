@@ -1,0 +1,4 @@
+Copie aquí los modelos exportados desde el notebook E2_Capitulo2 (sección 11):
+- modelo_pm2_5.json
+- modelo_pm10.json
+- metadatos_modelos.json (opcional)

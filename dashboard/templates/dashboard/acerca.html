@@ -1,0 +1,69 @@
+{% extends "dashboard/base.html" %}
+{% block titulo %}Acerca del modelo{% endblock %}
+{% block contenido %}
+<h1>Acerca del modelo</h1>
+<p class="subtitulo">Resumen técnico del sistema predictivo y explicable desarrollado bajo la metodología CRISP-DM.</p>
+
+<div class="rejilla">
+  <section class="panel">
+    <h3>Datos</h3>
+    <div class="dato-fila"><span>Fuente</span><strong>Open-Meteo Air Quality API (modelo CAMS)</strong></div>
+    <div class="dato-fila"><span>Periodo depurado</span><strong>{{ servicio.datos.date.min|date:"d/m/Y" }} – {{ servicio.ultima_fecha|date:"d/m/Y" }}</strong></div>
+    <div class="dato-fila"><span>Días disponibles</span><strong>{{ n_dias }}</strong></div>
+    <div class="dato-fila"><span>Resolución</span><strong>Promedio diario</strong></div>
+    <p class="nota">Los valores son estimaciones de un modelo de composición atmosférica, no mediciones de estaciones del SIATA.</p>
+  </section>
+  <section class="panel">
+    <h3>Modelo</h3>
+    <div class="dato-fila"><span>Algoritmo</span><strong>XGBoost (uno por contaminante)</strong></div>
+    <div class="dato-fila"><span>Escenario</span><strong>Pronóstico a 24 horas</strong></div>
+    <div class="dato-fila"><span>Variables de entrada</span><strong>21</strong></div>
+    <div class="dato-fila"><span>Explicabilidad</span><strong>TreeSHAP exacto</strong></div>
+    <div class="dato-fila"><span>Archivo PM2.5</span><strong>{{ servicio.archivos.pm2_5 }}</strong></div>
+    <div class="dato-fila"><span>Archivo PM10</span><strong>{{ servicio.archivos.pm10 }}</strong></div>
+  </section>
+</div>
+
+<h2>Variables de entrada</h2>
+<section class="panel">
+  <p>El modelo usa únicamente información disponible al cierre del día anterior:</p>
+  <ul>
+    <li>Concentraciones de ayer y anteayer de PM2.5, PM10, CO, NO₂, SO₂ y O₃ (12 variables).</li>
+    <li>Promedio de los últimos tres días y variación entre ayer y anteayer de PM2.5 y PM10 (4 variables).</li>
+    <li>Profundidad óptica de aerosoles, polvo e índice UV de ayer (3 variables).</li>
+    <li>Mes del año y día de la semana (2 variables).</li>
+  </ul>
+</section>
+
+<h2>Índice de Calidad del Aire (Resolución 2254 de 2017)</h2>
+<section class="panel tabla-scroll">
+  <table>
+    <thead><tr><th>Categoría</th><th class="num">PM2.5 (µg/m³, 24 h)</th><th class="num">PM10 (µg/m³, 24 h)</th></tr></thead>
+    <tbody>
+      <tr><td><span class="categoria" style="background:#2e9e5b">Buena</span></td><td class="num">0 – 12</td><td class="num">0 – 54</td></tr>
+      <tr><td><span class="categoria" style="background:#e3b505">Aceptable</span></td><td class="num">13 – 37</td><td class="num">55 – 154</td></tr>
+      <tr><td><span class="categoria" style="background:#f07f13">Dañina a la salud de grupos sensibles</span></td><td class="num">38 – 55</td><td class="num">155 – 254</td></tr>
+      <tr><td><span class="categoria" style="background:#d7263d">Dañina a la salud</span></td><td class="num">56 – 150</td><td class="num">255 – 354</td></tr>
+      <tr><td><span class="categoria" style="background:#7b2d8e">Muy dañina a la salud</span></td><td class="num">151 – 250</td><td class="num">355 – 424</td></tr>
+      <tr><td><span class="categoria" style="background:#7e0023">Peligrosa</span></td><td class="num">251 – 500</td><td class="num">425 – 604</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<h2>Limitaciones</h2>
+<section class="panel">
+  <ul>
+    <li>No incluye variables meteorológicas (lluvia, viento, altura de la capa límite), que explican buena parte de los episodios críticos.</li>
+    <li>Subestima los días críticos: es útil para anticipar el nivel general y las tendencias, no como único criterio de alerta.</li>
+    <li>Los datos provienen de un modelo atmosférico global (CAMS) y no de estaciones locales; el monóxido de carbono presenta un cambio de nivel desde 2024.</li>
+    <li>El pronóstico se actualiza cuando se reemplaza el archivo de datos por una versión más reciente.</li>
+  </ul>
+</section>
+
+{% if meta.versiones %}
+<h2>Versiones de entrenamiento</h2>
+<section class="panel">
+  {% for k, v in meta.versiones.items %}<div class="dato-fila"><span>{{ k }}</span><strong>{{ v }}</strong></div>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}

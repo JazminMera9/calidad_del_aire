@@ -1,0 +1,45 @@
+{% extends "dashboard/base.html" %}
+{% block titulo %}Desempeño{% endblock %}
+{% block contenido %}
+<h1>Desempeño del modelo</h1>
+<p class="subtitulo">
+  Evaluación sobre el periodo de prueba ({{ desde|date:"d/m/Y" }} a {{ hasta|date:"d/m/Y" }}, 194 días), que el modelo no
+  vio durante el entrenamiento ni la selección. Se compara con la persistencia: suponer que mañana será igual a hoy.
+</p>
+
+<section class="panel tabla-scroll">
+  <table>
+    <thead>
+      <tr><th>Contaminante</th><th>Modelo</th><th class="num">MAE (µg/m³)</th><th class="num">RMSE (µg/m³)</th>
+        <th class="num">R²</th><th class="num">MAE en días críticos</th><th class="num">Mejora frente a persistencia</th></tr>
+    </thead>
+    <tbody>
+      {% for m in metricas %}
+      <tr>
+        <td>{{ m.contaminante }}</td><td>{{ m.modelo }}</td>
+        <td class="num">{{ m.mae|floatformat:2 }}</td><td class="num">{{ m.rmse|floatformat:2 }}</td>
+        <td class="num">{{ m.r2|floatformat:2 }}</td>
+        <td class="num">{% if m.mae_picos is not None %}{{ m.mae_picos|floatformat:2 }} (n = {{ m.n_picos }}){% else %}—{% endif %}</td>
+        <td class="num">{% if m.mejora is not None %}{{ m.mejora|floatformat:1 }} %{% else %}—{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="nota">
+    MAE: error promedio diario. RMSE: penaliza más los errores grandes. R²: proporción de la variabilidad diaria explicada
+    (0 = equivale a pronosticar siempre el promedio). Días críticos: concentración superior al percentil 90 del entrenamiento
+    (PM2.5: {{ umbral_pm25|floatformat:2 }} µg/m³; PM10: {{ umbral_pm10|floatformat:2 }} µg/m³).
+  </p>
+</section>
+
+{% for g in graficas %}
+<h2>{{ g.nombre }}</h2>
+<section class="panel"><img src="data:image/png;base64,{{ g.img }}" alt="Serie observada y pronosticada de {{ g.nombre }}"></section>
+{% endfor %}
+
+<div class="aviso" style="margin-top:24px">
+  El periodo de prueba casi no contiene episodios críticos y el modelo tiende a subestimar los picos. Los resultados del
+  conjunto de validación (enero a agosto de 2025, que incluye la temporada crítica de marzo–abril) ofrecen una estimación más
+  prudente del desempeño en temporada de contingencia.
+</div>
+{% endblock %}

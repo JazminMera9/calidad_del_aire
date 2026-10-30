@@ -1,0 +1,55 @@
+{
+  "escenario": "A. Pronóstico 24 h",
+  "variables": [
+    "pm10_lag1",
+    "pm10_lag2",
+    "pm2_5_lag1",
+    "pm2_5_lag2",
+    "carbon_monoxide_lag1",
+    "carbon_monoxide_lag2",
+    "nitrogen_dioxide_lag1",
+    "nitrogen_dioxide_lag2",
+    "sulphur_dioxide_lag1",
+    "sulphur_dioxide_lag2",
+    "ozone_lag1",
+    "ozone_lag2",
+    "pm10_ma3",
+    "pm10_delta",
+    "pm2_5_ma3",
+    "pm2_5_delta",
+    "aerosol_optical_depth_lag1",
+    "dust_lag1",
+    "uv_index_lag1",
+    "mes",
+    "dia_semana"
+  ],
+  "umbral_p90": {
+    "PM2.5": 18.347916666666666,
+    "PM10": 25.5625
+  },
+  "versiones": {
+    "python": "3.13.18",
+    "pandas": "2.2.3",
+    "numpy": "2.1.3",
+    "scikit-learn": "1.6.1",
+    "xgboost": "3.4.1",
+    "lightgbm": "4.6.0",
+    "shap": "0.54.1"
+  },
+  "modelos": {
+    "PM2.5": {
+      "algoritmo": "XGBoost",
+      "archivo": "modelo_pm2_5_XGBoost.joblib",
+      "MAE_prueba": 2.4323,
+      "RMSE_prueba": 3.1814,
+      "R2_prueba": 0.3392
+    },
+    "PM10": {
+      "algoritmo": "XGBoost",
+      "archivo": "modelo_pm10_XGBoost.joblib",
+      "MAE_prueba": 2.5576,
+      "RMSE_prueba": 3.2982,
+      "R2_prueba": 0.3516
+    }
+  }
+}

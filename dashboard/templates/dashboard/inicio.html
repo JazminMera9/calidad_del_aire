@@ -1,0 +1,72 @@
+{% extends "dashboard/base.html" %}
+{% block titulo %}Pronóstico{% endblock %}
+{% block contenido %}
+<h1>{% if es_operativo %}Pronóstico para mañana{% else %}Pronóstico de un día histórico{% endif %}</h1>
+<p class="subtitulo">
+  {{ resultado.dia_semana|capfirst }} {{ resultado.fecha|date:"j" }} de {{ resultado.mes }} de {{ resultado.fecha|date:"Y" }}.
+  {% if es_operativo %}
+    Calculado con la información disponible hasta el {{ ultima_fecha|date:"d/m/Y" }} (último dato del registro).
+  {% else %}
+    El modelo solo usa información de los días anteriores, tal como lo haría al pronosticar ese día.
+  {% endif %}
+</p>
+
+{% if mensaje %}<div class="aviso">{{ mensaje }}</div>{% endif %}
+
+<form method="get" class="buscador">
+  <div>
+    <label for="fecha">Consultar otra fecha</label>
+    <input type="date" id="fecha" name="fecha" min="{{ fecha_min }}" max="{{ fecha_max }}" value="{{ fecha_valor }}">
+  </div>
+  <button type="submit" class="boton">Pronosticar</button>
+  {% if not es_operativo %}<a class="boton secundario" href="{% url 'dashboard:inicio' %}">Volver al pronóstico de mañana</a>{% endif %}
+</form>
+
+<div class="rejilla">
+  {% for c in resultado.contaminantes %}
+  <section class="panel">
+    <h3>{{ c.nombre }}</h3>
+    <div class="tarjeta-valor">
+      <span class="cifra">{{ c.prediccion|floatformat:1 }}</span><span class="unidad">µg/m³ (promedio diario pronosticado)</span>
+    </div>
+    <span class="categoria" style="background: {{ c.ica.color }}">ICA: {{ c.ica.nombre }}</span>
+    <p class="nota">{{ c.ica.mensaje }}</p>
+    <div class="dato-fila"><span>¿Día crítico? (supera el percentil 90 histórico, {{ c.umbral|floatformat:2 }} µg/m³)</span>
+      <strong class="{% if c.critico %}critico{% endif %}">{% if c.critico %}Sí{% else %}No{% endif %}</strong></div>
+    <div class="dato-fila"><span>Valor del día anterior (referencia de persistencia)</span><strong>{{ c.persistencia|floatformat:1 }} µg/m³</strong></div>
+    {% if c.observado is not None %}
+    <div class="dato-fila"><span>Valor observado ese día</span><strong>{{ c.observado|floatformat:1 }} µg/m³</strong></div>
+    <div class="dato-fila"><span>Error del pronóstico (pronóstico − observado)</span><strong>{{ c.error|floatformat:2 }} µg/m³</strong></div>
+    {% endif %}
+    <img src="data:image/png;base64,{{ c.grafico_reciente }}" alt="Serie reciente de {{ c.nombre }} y valor pronosticado">
+  </section>
+  {% endfor %}
+</div>
+
+<h2>¿Por qué el modelo pronostica estos valores?</h2>
+<p class="nota">
+  Explicación local TreeSHAP: el pronóstico parte del valor base del modelo (promedio aprendido en el entrenamiento) y cada
+  variable suma o resta microgramos por metro cúbico. La suma del valor base y de todos los aportes es exactamente el pronóstico.
+</p>
+<div class="rejilla">
+  {% for c in resultado.contaminantes %}
+  <section class="panel">
+    <img src="data:image/png;base64,{{ c.grafico_factores }}" alt="Aportes TreeSHAP del pronóstico de {{ c.nombre }}">
+    <div class="leyenda-shap">
+      <span><span class="punto" style="background:#c8102e"></span>Sube el pronóstico</span>
+      <span><span class="punto" style="background:#1f5fa8"></span>Baja el pronóstico</span>
+    </div>
+    <table style="margin-top:12px">
+      <tr><td>Valor base del modelo</td><td class="num">{{ c.base|floatformat:2 }}</td></tr>
+      <tr><td>Aporte de las {{ c.factores|length }} variables mostradas</td><td class="num">{{ c.suma_mostrados|floatformat:2 }}</td></tr>
+      <tr><td>Aporte del resto de variables</td><td class="num">{{ c.resto|floatformat:2 }}</td></tr>
+      <tr><th>Pronóstico</th><th class="num">{{ c.prediccion|floatformat:2 }} µg/m³</th></tr>
+    </table>
+  </section>
+  {% endfor %}
+</div>
+<p class="nota" style="margin-top:18px">
+  Limitación: el modelo tiende a subestimar los episodios críticos, porque no dispone de variables meteorológicas
+  (lluvia, viento, inversiones térmicas). Úselo como referencia del nivel general y no como único criterio para activar alertas.
+</p>
+{% endblock %}
